@@ -77,6 +77,7 @@ ui <- fluidPage(
 
       # Main panel
       mainPanel(
+        htmlOutput("codeblock", style = "margin-bottom: 20px;"),
         plotOutput("dataplot"),
         DT::dataTableOutput("datatable")
       )
@@ -132,6 +133,23 @@ server <- function(input, output, session) {
       end_date = tsDetails$endDate
     )
 
+    parameterShef <- tolower(dataAfterStation[[6]][1])
+    stationName <- tolower(input$stations)
+    stationName <- sub('.*- ', '', stationName)
+    stationName <- gsub(" ", "_", stationName)
+    tsName <- paste(stationName, parameterShef, sep = "_")
+    str0 <- "library(kiwisR)"
+    str1 <- paste0(tsName, " <- ki_timeseries_values(")
+    str2 <- paste0('&nbsp', 'hub = "quinte",')
+    str3 <- paste0('&nbsp', 'ts_id = "', tsDetails$tsID, '",')
+    str4 <- paste0('&nbsp', 'start_date = "', tsDetails$startDate, '",')
+    str5 <- paste0('&nbsp', 'end_date = "', tsDetails$endDate, '"')
+    str6 <- ')'
+
+    output$codeblock <- renderText({
+      paste(str0, str1, str2, str3, str4, str5, str6, sep = "<br/>")
+    })
+
     output$datatable <- DT::renderDataTable(server = FALSE, {
       DT::datatable(
         values,
@@ -139,9 +157,11 @@ server <- function(input, output, session) {
         filter = 'top',
         rownames = FALSE,
         options = list(
+          autoWidth = TRUE,
           columnDefs = list(list(visible = FALSE, targets = c("Timeseries", "TS ID"))),
           dom = 'Bfrtip',
           deferRender = FALSE,
+          pageLength = 20,
           buttons = list(
             list(extend = 'colvis', targets = 0, visible = FALSE),
             list(extend = "csv", text = "CSV Current Page", filename = "data_page",
