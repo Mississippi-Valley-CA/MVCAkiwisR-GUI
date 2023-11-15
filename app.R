@@ -84,12 +84,12 @@ ui <- fluidPage(
            top: 0px;
            left: 0px;
            width: 100%;
-           padding: 10px 0px 10px 0px;
+           padding: 8px 0px 8px 0px;
            text-align: center;
            font-weight: bold;
            font-size: 100%;
            color: #000000;
-           background-color: #007FFF;
+           background-color: #FFFF00;
            z-index: 999;
           }
         "),
@@ -187,12 +187,14 @@ server <- function(input, output, session) {
         options = list(
           autoWidth = TRUE,
           columnDefs = list(list(visible = FALSE, targets = c("Timeseries", "TS ID"))),
-          dom = 'Bfrtip',
+          dom = 'Blfrtip',
           deferRender = FALSE,
           pageLength = 20,
+          lengthMenu = list(c(10, 20, 50, 100, 200, 500),
+                            c('10', '20', '50', '100', '200', '500')),
           buttons = list(
-            list(extend = 'colvis', targets = 0, visible = FALSE),
-            list(extend = "csv", text = "CSV Current Page", filename = "data_page",
+            list(extend = 'colvis', text = "Visible Columns", targets = 0, visible = FALSE),
+            list(extend = 'csv', text = "CSV Current Page", filename = "data_page",
                  exportOptions = list(
                    modifier = list(page = "current")
                  )
