@@ -1,5 +1,4 @@
-# This is an R Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
+# You can run this Shiny Web App clicking the 'Run App' button above
 library("shiny")
 library("data.table")
 library("DT")
@@ -13,12 +12,13 @@ library("ggplot2")
 source("utils.R")
 source("ki_timeseries_values.R")
 
-# Increase the timeout due to slow Quinte servers #
-options(timeout=240)
-print("Please wait... Contacting the Quinte servers for timeseries data may take a few minutes.")
+# Increase the timeout due to slow Quinte servers
+options(timeout=300)
+
+# Download the complete list of MVCAs timeseries
 data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?format=csv&datasource=0&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&service=kisters&type=queryServices&metadata=false&request=getTimeseriesList&station_no=MVCA1*,MVCA2*,MVCA3*,MVCA4*,MVCA5*,MVCA6*,MVCA7*,MVCA8*,MVCA9*,WISKI-0321,02KF01*,02KF001,02KF005,02KF006,02KF020&station_name=Gauge*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage")
 
-# Build the parameters list #
+# Build the parameters list
 parameters <- sort(unique(data$parametertype_name))
 
 # Define UI for app
@@ -77,9 +77,11 @@ ui <- fluidPage(
 
       # Main panel
       mainPanel(
-        htmlOutput("codeblock", style = "margin-bottom: 20px;"),
-        plotOutput("dataplot"),
-        DT::dataTableOutput("datatable")
+        div(htmlOutput("codeblock")),
+        br(),
+        div(plotOutput("dataplot")),
+        br(),
+        div(DT::dataTableOutput("datatable")),
       )
     )
 )
@@ -138,16 +140,22 @@ server <- function(input, output, session) {
     stationName <- sub('.*- ', '', stationName)
     stationName <- gsub(" ", "_", stationName)
     tsName <- paste(stationName, parameterShef, sep = "_")
-    str0 <- "library(kiwisR)"
-    str1 <- paste0(tsName, " <- ki_timeseries_values(")
-    str2 <- paste0('&nbsp', 'hub = "quinte",')
-    str3 <- paste0('&nbsp', 'ts_id = "', tsDetails$tsID, '",')
-    str4 <- paste0('&nbsp', 'start_date = "', tsDetails$startDate, '",')
-    str5 <- paste0('&nbsp', 'end_date = "', tsDetails$endDate, '"')
-    str6 <- ')'
+    str0 <- paste0('<p><b>', 'R Script code:', '</b></p>')
+    str1 <- '# Install kiwisR from CRAN'
+    str2 <- "install.packages('kiwisR')"
+    str3 <- '# Load the package kiwisR from the library'
+    str4 <- 'library(kiwisR)'
+    str5 <- ''
+    str6 <- paste0('# Access WISKI data for ', tsName)
+    str7 <- paste0(tsName, ' <- ki_timeseries_values(')
+    str8 <- paste0('&nbsp;&nbsp;', 'hub = "quinte",')
+    str9 <- paste0('&nbsp;&nbsp;', 'ts_id = "', tsDetails$tsID, '",')
+    str10 <- paste0('&nbsp;&nbsp;', 'start_date = "', tsDetails$startDate, '",')
+    str11 <- paste0('&nbsp;&nbsp;', 'end_date = "', tsDetails$endDate, '"')
+    str12 <- ')'
 
     output$codeblock <- renderText({
-      paste(str0, str1, str2, str3, str4, str5, str6, sep = "<br/>")
+      paste(str0, str1, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11, str12, sep = "<br/>")
     })
 
     output$datatable <- DT::renderDataTable(server = FALSE, {
