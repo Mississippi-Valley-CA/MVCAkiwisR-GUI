@@ -79,18 +79,18 @@ ui <- fluidPage(
       mainPanel(
         # CSS
         tags$style(type="text/css", "
-          #loadmessage {
-           position: fixed;
-           top: 0px;
-           left: 0px;
-           width: 100%;
-           padding: 8px 0px 8px 0px;
-           text-align: center;
-           font-weight: bold;
-           font-size: 100%;
-           color: #000000;
-           background-color: #FFFF00;
-           z-index: 999;
+          #load-message {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            width: 100%;
+            padding: 8px 0px 8px 0px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 100%;
+            color: #000000;
+            background-color: #FFFF00;
+            z-index: 999;
           }
         "),
         div(htmlOutput("codeblock")),
@@ -99,8 +99,9 @@ ui <- fluidPage(
         br(),
         div(DT::dataTableOutput("datatable")),
         # Loading message
-        conditionalPanel(condition="$('html').hasClass('shiny-busy')",
-                         tags$div("Loading...",id="loadmessage")
+        conditionalPanel(
+          condition="$('html').hasClass('shiny-busy')",
+          tags$div("Loading...", id="load-message")
         ),
       )
     )
@@ -114,7 +115,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   tsDetails <- reactiveValues(startDate=NULL, endDate=NULL, tsId=NULL)
 
-  # Observe functions will be triggered each time an argument undergoes a change in value.
+  # Observe functions will be triggered each time an argument undergoes a change in value
   observeEvent(input$parameters, {
     # Update stations input based on parameters
     dataAfterParameter <<- data[data$parametertype_name == input$parameters, ]
@@ -195,24 +196,24 @@ server <- function(input, output, session) {
           buttons = list(
             list(extend = 'colvis', text = "Visible Columns", targets = 0, visible = FALSE),
             list(extend = 'csv', text = "CSV Current Page", filename = "data_page",
-                 exportOptions = list(
-                   modifier = list(page = "current")
-                 )
+                exportOptions = list(
+                  modifier = list(page = "current")
+                )
             ),
             list(extend = "csv", text = "CSV All Results", filename = "data_all",
-                 exportOptions = list(
-                   modifier = list(page = "all")
-                 )
+                exportOptions = list(
+                  modifier = list(page = "all")
+                )
             ),
             list(extend = "pdf", text = "PDF Current Page", filename = "data_page",
-                 exportOptions = list(
-                   modifier = list(page = "current")
-                 )
+                exportOptions = list(
+                  modifier = list(page = "current")
+                )
             ),
             list(extend = "pdf", text = "PDF All Results", filename = "data_all",
-                 exportOptions = list(
-                   modifier = list(page = "all")
-                 )
+                exportOptions = list(
+                  modifier = list(page = "all")
+                )
             )
           )
         )
