@@ -77,11 +77,31 @@ ui <- fluidPage(
 
       # Main panel
       mainPanel(
+        # CSS
+        tags$style(type="text/css", "
+          #loadmessage {
+           position: fixed;
+           top: 0px;
+           left: 0px;
+           width: 100%;
+           padding: 10px 0px 10px 0px;
+           text-align: center;
+           font-weight: bold;
+           font-size: 100%;
+           color: #000000;
+           background-color: #007FFF;
+           z-index: 999;
+          }
+        "),
         div(htmlOutput("codeblock")),
         br(),
         div(plotOutput("dataplot")),
         br(),
         div(DT::dataTableOutput("datatable")),
+        # Loading message
+        conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                         tags$div("Loading...",id="loadmessage")
+        ),
       )
     )
 )
