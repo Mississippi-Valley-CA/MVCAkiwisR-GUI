@@ -189,7 +189,7 @@ server <- function(input, output, session) {
           autoWidth = TRUE,
           columnDefs = list(list(visible = FALSE, targets = c("Timeseries", "TS ID"))),
           dom = 'Blfrtip',
-          deferRender = FALSE,
+          deferRender = TRUE,
           pageLength = 20,
           lengthMenu = list(c(10, 20, 50, 100, 200, 500),
                             c('10', '20', '50', '100', '200', '500')),
