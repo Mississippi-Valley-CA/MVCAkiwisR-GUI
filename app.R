@@ -161,7 +161,7 @@ server <- function(input, output, session) {
     stationName <- sub('.*- ', '', stationName)
     stationName <- gsub(" ", "_", stationName)
     tsName <- paste(stationName, parameterShef, sep = "_")
-    str0 <- paste0('<p><b>', 'R Script code:', '</b></p>')
+    str0 <- paste0('<b>', 'R Script code:', '</b>')
     str1 <- '# Install kiwisR from CRAN'
     str2 <- "install.packages('kiwisR')"
     str3 <- '# Load the package kiwisR from the library'
