@@ -20,9 +20,14 @@ options(timeout=300)
 #data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?format=csv&datasource=0&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&service=kisters&type=queryServices&metadata=false&request=getTimeseriesList&site_no=2&station_name=Gauge*,Ice*,Snow*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage")
 # With water quality:
 #data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?format=csv&datasource=0&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&service=kisters&type=queryServices&metadata=false&request=getTimeseriesList&site_no=2&station_name=Gauge*,Ice*,Snow*,OSAP*,W*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage")
+# NEW URL with water quality:
+#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=Gauge*,Ice*,OSAP*,Snow*,W*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage")
 
 #Load the complete list of MVCA timeseries
 data <- fread("tslist.csv")
+
+#Remove empty timeseries
+data <- subset(data, !is.na(data$from))
 
 # Build the parameters list
 parameters <- sort(unique(data$parametertype_name))
@@ -167,22 +172,24 @@ server <- function(input, output, session) {
     stationName <- sub('.*- ', '', stationName)
     stationName <- gsub(" ", "_", stationName)
     tsName <- paste(stationName, parameterShef, sep = "_")
-    str0 <- paste0('<b>', 'R Script code:', '</b>')
-    str1 <- '# Install kiwisR from CRAN'
-    str2 <- "install.packages('kiwisR')"
-    str3 <- '# Load the package kiwisR from the library'
-    str4 <- 'library(kiwisR)'
-    str5 <- ''
-    str6 <- paste0('# Access WISKI data for ', tsName)
-    str7 <- paste0(tsName, ' <- ki_timeseries_values(')
-    str8 <- paste0('&nbsp;&nbsp;', 'hub = "quinte",')
-    str9 <- paste0('&nbsp;&nbsp;', 'ts_id = "', tsDetails$tsID, '",')
-    str10 <- paste0('&nbsp;&nbsp;', 'start_date = "', tsDetails$startDate, '",')
-    str11 <- paste0('&nbsp;&nbsp;', 'end_date = "', tsDetails$endDate, '"')
-    str12 <- ')'
+    str0 <- paste0('<b>', 'R Script Code', '</b>')
+    str1 <- ''
+    str2 <- '# Install pacman aka "package manager" from CRAN'
+    str3 <- "if (!require('pacman')) install.packages('pacman')"
+    str4 <- '# Use pacman to load kiwisR and add-on packages'
+    str5 <- 'pacman::p_load(pacman, kiwisR, utils)'
+    str6 <- ''
+    str7 <- paste0('# Access WISKI data for ', tsName)
+    str8 <- paste0(tsName, ' <- ki_timeseries_values(')
+    str9 <- paste0('&nbsp;&nbsp;', 'hub = "quinte",')
+    str10 <- paste0('&nbsp;&nbsp;', 'ts_id = "', tsDetails$tsID, '",')
+    str11 <- paste0('&nbsp;&nbsp;', 'start_date = "', tsDetails$startDate, '",')
+    str12 <- paste0('&nbsp;&nbsp;', 'end_date = "', tsDetails$endDate, '"')
+    str13 <- ')'
+    str14 <- ''
 
     output$codeblock <- renderText({
-      paste(str0, str1, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11, str12, sep = "<br/>")
+      paste(str0, str1, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11, str12, str13, str14, sep = "<br/>")
     })
 
     output$datatable <- DT::renderDataTable(server = FALSE, {
