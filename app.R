@@ -16,13 +16,13 @@ source("ki_timeseries_values.R")
 options(timeout=300)
 
 # Download the complete list of MVCA timeseries
-#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",", fill=TRUE)
+#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",")
 
 load_data <- function() {
   # Load the complete list of MVCA timeseries
-  data <- fread("tslist.csv", sep=",", fill=TRUE)
+  data <- fread("tslist.csv", sep=",")
 
-  # Remove empty timeseries
+  # Remove any empty timeseries
   data <<- subset(data, !is.na(data$from))
 
   # Build the parameters list
@@ -128,7 +128,7 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   observeEvent(input$update_tslist, {
-    updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",", fill=TRUE)
+    updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",")
     write.csv(updated_data, file = "tslist.csv", row.names=F)
     load_data()
     session$reload()
