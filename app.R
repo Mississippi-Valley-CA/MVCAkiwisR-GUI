@@ -16,17 +16,12 @@ source("ki_timeseries_values.R")
 options(timeout=300)
 
 # Download the complete list of MVCA timeseries
-# Without water quality:
-#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?format=csv&datasource=0&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&service=kisters&type=queryServices&metadata=false&request=getTimeseriesList&site_no=2&station_name=Gauge*,Ice*,Snow*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage")
-# With water quality:
-#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?format=csv&datasource=0&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&service=kisters&type=queryServices&metadata=false&request=getTimeseriesList&site_no=2&station_name=Gauge*,Ice*,Snow*,OSAP*,W*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage")
-# NEW URL with water quality:
-#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=Gauge*,Ice*,OSAP*,Snow*,W*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage")
+#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage")
 
-#Load the complete list of MVCA timeseries
+# Load the complete list of MVCA timeseries
 data <- fread("tslist.csv")
 
-#Remove empty timeseries
+# Remove empty timeseries
 data <- subset(data, !is.na(data$from))
 
 # Build the parameters list
