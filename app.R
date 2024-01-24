@@ -16,27 +16,34 @@ source("ki_timeseries_values.R")
 options(timeout=300)
 
 # Download the complete list of MVCA timeseries
-#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage")
+#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",", fill=TRUE)
 
-# Load the complete list of MVCA timeseries
-data <- fread("tslist.csv")
+load_data <- function() {
+  # Load the complete list of MVCA timeseries
+  data <- fread("tslist.csv", sep=",", fill=TRUE)
 
-# Remove empty timeseries
-data <- subset(data, !is.na(data$from))
+  # Remove empty timeseries
+  data <<- subset(data, !is.na(data$from))
 
-# Build the parameters list
-parameters <- sort(unique(data$parametertype_name))
+  # Build the parameters list
+  parameters <<- sort(unique(data$parametertype_name))
+}
+
+load_data()
 
 # Define UI for app
 ui <- fluidPage(
     # Application title
     titlePanel("MVCA WISKI Data"),
-
+    # Button to Update the tslist from Quinte servers
+    actionButton("update_tslist", "Update Timeseries List (approx 3 minutes)"),
+    p(HTML("<br>")),
     # Sidebar with a slider input for number of bins
     sidebarLayout(
       # Sidebar panel for inputs
       sidebarPanel(
         helpText("Select parameter, station, timeseries type, and dates:"),
+
         # Select the parameter
         selectInput(
           inputId = "parameters",
@@ -78,7 +85,7 @@ ui <- fluidPage(
           max = NULL
         ),
 
-        actionButton("downloadButton", "Load Timeseries Data"),
+        actionButton("loadTimeseriesData", "Load Timeseries Data"),
       ),
 
       # Main panel
@@ -90,7 +97,7 @@ ui <- fluidPage(
             top: 0px;
             left: 0px;
             width: 100%;
-            padding: 8px 0px 8px 0px;
+            padding: 15px 0px 15px 0px;
             text-align: center;
             font-weight: bold;
             font-size: 100%;
@@ -118,9 +125,17 @@ ui <- fluidPage(
 # This is necessary for Shiny applications which will have different behavior
 # based upon user inputs. In this case, changing the presented timeseries
 # choices based on previous choices.
-server <- function(input, output, session) {
-  tsDetails <- reactiveValues(startDate=NULL, endDate=NULL, tsId=NULL)
 
+server <- function(input, output, session) {
+  observeEvent(input$update_tslist, {
+    updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",", fill=TRUE)
+    write.csv(updated_data, file = "tslist.csv", row.names=F)
+    load_data()
+    session$reload()
+    return()
+  })
+
+  tsDetails <- reactiveValues(startDate=NULL, endDate=NULL, tsId=NULL)
   # Observe functions will be triggered each time an argument undergoes a change in value
   observeEvent(input$parameters, {
     # Update stations input based on parameters
@@ -154,7 +169,7 @@ server <- function(input, output, session) {
     tsDetails$endDate <- format(input$endDate, format="%Y-%m-%d", tzone = "GMT-5")
   })
 
-  observeEvent(input$downloadButton, {
+  observeEvent(input$loadTimeseriesData, {
     # Get the timeseries values #
     values <- ki_timeseries_values(
       ts_id = tsDetails$tsID,
@@ -163,13 +178,17 @@ server <- function(input, output, session) {
     )
 
     parameterShef <- tolower(dataAfterStation[[6]][1])
+    parameterShef <- sub('.*- ', '', parameterShef)
+    parameterShef <- gsub(",", "", parameterShef)
+    parameterShef <- gsub(" ", "_", parameterShef)
     stationName <- tolower(input$stations)
     stationName <- sub('.*- ', '', stationName)
+    stationName <- gsub(",", "", stationName)
     stationName <- gsub(" ", "_", stationName)
     tsName <- paste(stationName, parameterShef, sep = "_")
-    str0 <- paste0('<b>', 'R Script Code', '</b>')
+    str0 <- paste0('<b>', 'R script code:', '</b>')
     str1 <- ''
-    str2 <- '# Install pacman aka "package manager" from CRAN'
+    str2 <- '# Install pacman package manager from CRAN'
     str3 <- "if (!require('pacman')) install.packages('pacman')"
     str4 <- '# Use pacman to load kiwisR and add-on packages'
     str5 <- 'pacman::p_load(pacman, kiwisR, utils)'
@@ -198,9 +217,9 @@ server <- function(input, output, session) {
           columnDefs = list(list(visible = FALSE, targets = c("Timeseries", "TS ID"))),
           dom = 'Blfrtip',
           deferRender = TRUE,
-          pageLength = 20,
           lengthMenu = list(c(10, 20, 50, 100, 200, 500),
                             c('10', '20', '50', '100', '200', '500')),
+          pageLength = 100,
           buttons = list(
             list(extend = 'colvis', text = "Visible Columns", targets = 0, visible = FALSE),
             list(extend = 'csv', text = "CSV Current Page", filename = "data_page",
