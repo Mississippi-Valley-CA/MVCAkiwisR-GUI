@@ -1,15 +1,9 @@
-Reset start date and end date in UI when other values change.
-
-Sort the data table in reverse order (newest first) by timestamp
-
-Better error handling:
-- Clicking "Load Timeseries Data" without choosing all parameters crashes the app with the error:
-    Warning: Error in ki_timeseries_values: Request must contain either ts_id, timeseriesgroup_id or ts_path.
-
-Investigate this error from Calcium, WW - Ardoch Lake, Sample results.Original, 1999-2018:
+- Add an "Instructions" page users first see when they open the app.
+- Reset start date and end date in UI when other values change.
+- Sort the data table in reverse order (newest first) by timestamp
+- Better error handling:
+    - Clicking "Load Timeseries Data" without choosing all parameters crashes the app with the error:
+        Warning: Error in ki_timeseries_values: Request must contain either ts_id, timeseriesgroup_id or ts_path.
+- Investigate this error from Calcium, WW - Ardoch Lake, Sample results.Original, 1999-2018:
     Warning: Removed 4 rows containing missing values (`geom_line()`).
-
-
-Dataframe is not always sorted by timestamp, i.e.: Lead, WQM - Fall River, 01.Original, 1999-2018
-
-Add a copyright/created by in the UI and in the code.
+- Dataframe is not always sorted by timestamp, i.e.: Lead, WQM - Fall River, 01.Original, 1999-2018
