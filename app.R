@@ -152,8 +152,19 @@ server <- function(input, output, session) {
          alt = "the MVCA's new logo")
   }, deleteFile = FALSE)
 
-  sentence <- "A sample Instructions sentence for demo"
-  output$codeblock <- renderText(sentence)
+  # Render the instructions text in the main panel
+  instr0 <- paste0('<b>', 'Instructions', '</b>')
+  instr1 <- 'Access the MVCA\'s water levels and flows, water quality, snow, ice, and climate data.'
+  instr2 <- ''
+  instr3 <- 'Begin by selecting a parameter and then work down the list to choose a station, timeseries, and start/end dates.'
+  instr4 <- ''
+  instr5 <- 'Click "Load Timeseries" to see and download the data. Modify your selections and re-load as needed.'
+  instr6 <- ''
+  instr7 <- paste0('<b>', 'Note', '</b>')
+  instr8 <- '"Update Timeseries List" takes several minutes but will load the app with the most recent datasets.'
+  output$codeblock <- renderText({
+    paste(instr0, instr1, instr2, instr3, instr4, instr5, instr6, instr7, instr8, sep = "<br/>")
+  })
 
   observeEvent(input$update_tslist, {
     updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",")
