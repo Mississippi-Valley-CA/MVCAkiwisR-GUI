@@ -1,4 +1,11 @@
+# Prompt user for all needed inputs and then get values for the time series id.
+# This Shiny App asks the user for details to narrow down on the timeseries and then returns time series values for given time series id and date range.
+# Returns A visualization of the data and a data frame with the columns returned by the script ki_timeseries_values
+# This package made possible thanks to Ryan Whaley's 'kiwisR' (<https://github.com/rywhale/kiwisR>).
+# Author: Daniel Post, MVCA, dpost@mvc.on.ca
+# Created: December 2023
 # You can run this Shiny Web App clicking the 'Run App' button above
+
 library("shiny")
 library("data.table")
 library("DT")
@@ -12,13 +19,11 @@ library("ggplot2")
 source("utils.R")
 source("ki_timeseries_values.R")
 
-# Increase the timeout due to slow Quinte servers
+# Increase the timeout due to the large amount of data requested from Quinte Conservation Authority's server
 options(timeout=300)
 
 # Download the complete list of MVCA timeseries
 #data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",")
-
-
 
 load_data <- function() {
   # Load the complete list of MVCA timeseries
@@ -27,20 +32,24 @@ load_data <- function() {
   # Remove any empty timeseries
   data <- subset(data, !is.na(data$from))
 
-  # Build the parameters list
+  # Build the parameters list and make it avaiable outside the function
   parameters <<- sort(unique(data$parametertype_name))
 
   return(data)
 }
 
+# Call function to load and cleanup the timeseries list
 load_data()
 
 # Define UI for app
 ui <- fluidPage(
+    p(HTML("<br>")),
+    # MVCA Logo
+    imageOutput("mvca_logo", width = 202, height = 40),
     # Application title
-    titlePanel("MVCA WISKI Data"),
+    titlePanel("MVCA WISKI-R"),
     # Button to Update the tslist from Quinte servers
-    actionButton("update_tslist", "Update Timeseries List (approx 3 minutes)"),
+    actionButton("update_tslist", "Update Timeseries List (takes approx 3 min)"),
     p(HTML("<br>")),
     # Sidebar with a slider input for number of bins
     sidebarLayout(
@@ -132,6 +141,19 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   data <- load_data()
+
+  output$mvca_logo <- renderImage({
+    filename <- normalizePath(file.path('./images','mvca-new-logo.jpg'))
+
+    list(src = filename,
+         contentType = 'image/jpg',
+         width = 202,
+         height = 40,
+         alt = "the MVCA's new logo")
+  }, deleteFile = FALSE)
+
+  sentence <- "A sample Instructions sentence for demo"
+  output$codeblock <- renderText(sentence)
 
   observeEvent(input$update_tslist, {
     updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",")
