@@ -11,6 +11,15 @@
 
 - Dataframe is not always sorted by timestamp, i.e.: Lead, WQM - Fall River, 01.Original, 1999-2018
 
-- data table sepecify format: YYYY-mm-dd HH:mm:ss
-
 - Change font of codeblock
+
+- Loading a second set of data duplicates (adds to) the R Script code. Needs to reset it.
+
+Fix this:
+# Access WISKI data for ardoch_lake_main_basin_/_almb_1999-06-17_13:15:00
+ardoch_lake_main_basin_/_almb_1999-06-17_13:15:00 <- ki_timeseries_values(
+  hub = "quinte",
+  ts_id = "2528042",
+  start_date = "1999-06-17",
+  end_date = "2018-08-31"
+)

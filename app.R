@@ -13,6 +13,7 @@ library("httr")
 library("jsonlite")
 library("lubridate")
 library("purrr")
+library("tidyr")
 library("tibble")
 library("ggplot2")
 source("utils.R")
@@ -22,19 +23,19 @@ source("ki_timeseries_values.R")
 options(timeout=300)
 
 # Download the complete list of MVCA timeseries
-#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=;&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=";")
+#ts_list <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage&csvdiv=;", sep=";")
 
 load_data <- function() {
   # Load the complete list of MVCA timeseries
-  data <- fread("tslist.csv", sep=";")
+  csv_data <- fread("tslist.csv", sep=";")
 
   # Remove any empty timeseries
-  data <- subset(data, !is.na(data$from))
+  ts_list <<- subset(csv_data, !is.na(csv_data$from))
 
   # Build the parameters list and make it available outside the function
-  parameters <<- sort(unique(data$parametertype_name))
+  parameters <<- sort(unique(ts_list$parametertype_name))
 
-  return(data)
+  return(ts_list)
 }
 
 # Call function to load and cleanup the timeseries list
@@ -138,7 +139,7 @@ ui <- fluidPage(
 # based upon user inputs. In this case, changing the presented timeseries
 # choices based on previous choices.
 server <- function(input, output, session) {
-  data <- load_data()
+  ts_list <- load_data()
 
   output$mvca_logo <- renderImage({
     filename <- normalizePath(file.path('./images','mvca-new-logo.jpg'))
@@ -150,7 +151,7 @@ server <- function(input, output, session) {
          alt = "The MVCA's logo")
   }, deleteFile = FALSE)
 
-  # Render the instructions text in the main panel
+  # Build the instructions text in the main panel
   instr0 <- paste0('<b>', 'Instructions', '</b>')
   instr1 <- 'Access the MVCA\'s water levels and flows, water quality, snow, ice, and climate data.'
   instr2 <- ''
@@ -160,12 +161,14 @@ server <- function(input, output, session) {
   instr6 <- ''
   instr7 <- paste0('<b>', 'Note', '</b>')
   instr8 <- '"Update Timeseries List" takes several minutes but will reload the app with the most recent datasets.'
+
+  # Render the instructions text in the main panel
   output$codeblock <- renderText({
     paste(instr0, instr1, instr2, instr3, instr4, instr5, instr6, instr7, instr8, sep = "<br/>")
   })
 
   observeEvent(input$update_tslist, {
-    updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=;&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=";")
+    updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage&csvdiv=;", sep=";")
     fwrite(updated_data, file = "tslist.csv", sep=";")
     load_data()
     session$reload()
@@ -173,17 +176,19 @@ server <- function(input, output, session) {
   })
 
   tsDetails <- reactiveValues(startDate=NULL, endDate=NULL, tsId=NULL)
+
   # Observe functions will be triggered each time an argument undergoes a change in value
   observeEvent(input$parameters, {
     # Update stations input based on parameters
-    dataAfterParameter <<- data[data$parametertype_name == input$parameters, ]
-    stations <- sort(unique(dataAfterParameter$station_name))
+    dataAfterParameter <- ts_list[ts_list$parametertype_name == input$parameters, ]
+    dataAfterParameterUnited <<- dataAfterParameter %>% unite("station_name_and_station_no", station_name:station_no, remove=TRUE, sep=" / ")
+    stations <- sort(unique(dataAfterParameterUnited$station_name_and_station_no))
     updateSelectizeInput(session, input = "stations", choices = c("Choose", stations))
   })
 
   observeEvent(input$stations, {
     # Update timeseries input based on stations
-    dataAfterStation <<- dataAfterParameter[dataAfterParameter$station_name == input$stations, ]
+    dataAfterStation <<- dataAfterParameterUnited[dataAfterParameterUnited$station_name_and_station_no == input$stations, ]
     timeseries <- sort(unique(dataAfterStation$ts_name))
     updateSelectizeInput(session, input = "timeseries", choices = c("Choose", timeseries))
   })
@@ -199,11 +204,11 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$startDate, {
-    tsDetails$startDate <- format(input$startDate, format="%Y-%m-%d", tzone = "EST")
+    tsDetails$startDate <- format(input$startDate, format="%Y-%m-%d", tzone="EST")
   })
 
   observeEvent(input$endDate, {
-    tsDetails$endDate <- format(input$endDate, format="%Y-%m-%d", tzone = "EST")
+    tsDetails$endDate <- format(input$endDate, format="%Y-%m-%d", tzone="EST")
   })
 
   observeEvent(input$loadTimeseriesData, {
@@ -240,6 +245,7 @@ server <- function(input, output, session) {
     str14 <- ''
 
     # Output the R-Script code to the code block
+    output$codeblock <- renderText("")
     output$codeblock <- renderText({
       paste(str0, str1, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11, str12, str13, str14, sep="<br/>")
     })
@@ -258,11 +264,12 @@ server <- function(input, output, session) {
         rownames = FALSE,
         options = list(
           autoWidth = TRUE,
-          columnDefs = list(list(visible = FALSE, targets = c("Timeseries", "TS ID"))),
+          columnDefs = list(list(visible = FALSE, targets = c("Parameter Name", "Timeseries", "TS ID"))),
           dom = 'Blfrtip',
           deferRender = TRUE,
           lengthMenu = list(c(10, 20, 50, 100, 200, 500),
                             c('10', '20', '50', '100', '200', '500')),
+          order = list(0, 'asc'),
           pageLength = 100,
           buttons = list(
             list(extend = 'colvis', text = "Visible Columns", targets = 0, visible = FALSE),
@@ -288,7 +295,7 @@ server <- function(input, output, session) {
             )
           )
         )
-      ) %>% formatDate("Timestamp", method = "toLocaleString", params = list("sv-SE", list(hour12 = F, timeZone = "EST")))
+      ) %>% formatDate("Timestamp", method = "toLocaleString", params=list("sv-SE", list(hour12=F, timeZone="EST")))
     })
   })
 }

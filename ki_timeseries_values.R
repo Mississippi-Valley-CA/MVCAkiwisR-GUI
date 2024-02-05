@@ -7,7 +7,8 @@
 #'  Time series ids can be found using the `ki_timeseries_list` function.
 #' @param start_date A date string formatted "YYYY-MM-DD". Defaults to yesterday.
 #' @param end_date A date string formatted "YYYY-MM-DD". Defaults to today.
-#' @return A tibble with following columns by default: Timestamp, Value, Units, station_name, stationparameter_name, ts_name, ts_id
+#' @return A tibble with following columns by default:
+#'  Timestamp, Value, Units, station_name, station_no, stationparameter_name, ts_name, ts_id
 #' @examples
 #' \dontrun{
 #' ki_timeseries_values(
@@ -46,7 +47,7 @@ ki_timeseries_values <- function(ts_id, start_date, end_date) {
     to = end_date,
     metadata = "true",
     returnfields = "Timestamp,Value",
-    md_returnfields = "station_name,parametertype_name,stationparameter_name,ts_name,ts_id,ts_unitsymbol"
+    md_returnfields = "station_name,parametertype_name,station_no,stationparameter_name,ts_name,ts_id,ts_unitsymbol"
   )
 
   # Send request
@@ -96,6 +97,7 @@ ki_timeseries_values <- function(ts_id, start_date, end_date) {
         Value = as.numeric(ts_data$Value),
         Units = json_content$ts_unitsymbol[[ts_chunk]],
         'Station Name' = json_content$station_name[[ts_chunk]],
+        'Station No' = json_content$station_no[[ts_chunk]],
         'Parameter Name' = json_content$stationparameter_name[[ts_chunk]],
         'Parameter Type' = json_content$parametertype_name[[ts_chunk]],
         Timeseries = json_content$ts_name[[ts_chunk]],
