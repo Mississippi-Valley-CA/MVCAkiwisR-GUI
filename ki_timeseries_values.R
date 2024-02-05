@@ -1,4 +1,4 @@
-#' Get values for time series id or list of time series ids.
+#' Get values for time series id or list of timeseries ids.
 #'
 #' @export
 #' @description Returns time series values for given time series id and date range.
@@ -54,7 +54,7 @@ ki_timeseries_values <- function(ts_id, start_date, end_date) {
     httr::GET(
       url = "https://waterdata.quinteconservation.ca/KiWIS/KiWIS?",
       query = api_query,
-      httr::timeout(60)
+      httr::timeout(120)
     )
   }, error = function(e) {
     return(e)

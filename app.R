@@ -5,7 +5,6 @@
 # Author: Daniel Post, MVCA, dpost@mvc.on.ca
 # Created: December 2023
 # You can run this Shiny Web App clicking the 'Run App' button above
-
 library("shiny")
 library("data.table")
 library("DT")
@@ -23,16 +22,16 @@ source("ki_timeseries_values.R")
 options(timeout=300)
 
 # Download the complete list of MVCA timeseries
-#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",")
+#data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=;&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=";")
 
 load_data <- function() {
   # Load the complete list of MVCA timeseries
-  data <- fread("tslist.csv", sep=",")
+  data <- fread("tslist.csv", sep=";")
 
   # Remove any empty timeseries
   data <- subset(data, !is.na(data$from))
 
-  # Build the parameters list and make it avaiable outside the function
+  # Build the parameters list and make it available outside the function
   parameters <<- sort(unique(data$parametertype_name))
 
   return(data)
@@ -49,7 +48,7 @@ ui <- fluidPage(
     # Application title
     titlePanel("MVCA WISKI-R"),
     # Button to Update the tslist from Quinte servers
-    actionButton("update_tslist", "Update Timeseries List (takes approx 3 min)"),
+    actionButton("update_tslist", "Update Timeseries List (takes 3-5 min)"),
     p(HTML("<br>")),
     # Sidebar with a slider input for number of bins
     sidebarLayout(
@@ -138,7 +137,6 @@ ui <- fluidPage(
 # This is necessary for Shiny applications which will have different behavior
 # based upon user inputs. In this case, changing the presented timeseries
 # choices based on previous choices.
-
 server <- function(input, output, session) {
   data <- load_data()
 
@@ -149,7 +147,7 @@ server <- function(input, output, session) {
          contentType = 'image/jpg',
          width = 202,
          height = 40,
-         alt = "the MVCA's new logo")
+         alt = "The MVCA's logo")
   }, deleteFile = FALSE)
 
   # Render the instructions text in the main panel
@@ -161,14 +159,14 @@ server <- function(input, output, session) {
   instr5 <- 'Click "Load Timeseries" to see and download the data. Modify your selections and re-load as needed.'
   instr6 <- ''
   instr7 <- paste0('<b>', 'Note', '</b>')
-  instr8 <- '"Update Timeseries List" takes several minutes but will load the app with the most recent datasets.'
+  instr8 <- '"Update Timeseries List" takes several minutes but will reload the app with the most recent datasets.'
   output$codeblock <- renderText({
     paste(instr0, instr1, instr2, instr3, instr4, instr5, instr6, instr7, instr8, sep = "<br/>")
   })
 
   observeEvent(input$update_tslist, {
-    updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=,&timezone=GMT-5&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=",")
-    write.csv(updated_data, file = "tslist.csv", row.names=F)
+    updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=;&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", sep=";")
+    fwrite(updated_data, file = "tslist.csv", sep=";")
     load_data()
     session$reload()
     return()
@@ -194,18 +192,18 @@ server <- function(input, output, session) {
     # Get the timeseries details to update the id, start date, and end date
     ts <- dataAfterStation[dataAfterStation$ts_name == input$timeseries, ]
     tsDetails$tsID <<- ts$ts_id
-    earliestStartDate <<- format(ts$from, format="%Y-%m-%d", tzone = "GMT-5")
-    latestEndDate <<- format(ts$to, format="%Y-%m-%d", tzone = "GMT-5")
+    earliestStartDate <<- format(ts$from, format="%Y-%m-%d", tzone = "EST")
+    latestEndDate <<- format(ts$to, format="%Y-%m-%d", tzone = "EST")
     updateDateInput(session, "startDate", min = earliestStartDate, max = latestEndDate, value = earliestStartDate)
     updateDateInput(session, "endDate", min = earliestStartDate, max = latestEndDate, value = latestEndDate)
   })
 
   observeEvent(input$startDate, {
-    tsDetails$startDate <- format(input$startDate, format="%Y-%m-%d", tzone = "GMT-5")
+    tsDetails$startDate <- format(input$startDate, format="%Y-%m-%d", tzone = "EST")
   })
 
   observeEvent(input$endDate, {
-    tsDetails$endDate <- format(input$endDate, format="%Y-%m-%d", tzone = "GMT-5")
+    tsDetails$endDate <- format(input$endDate, format="%Y-%m-%d", tzone = "EST")
   })
 
   observeEvent(input$loadTimeseriesData, {
@@ -242,13 +240,13 @@ server <- function(input, output, session) {
     str14 <- ''
 
     output$codeblock <- renderText({
-      paste(str0, str1, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11, str12, str13, str14, sep = "<br/>")
+      paste(str0, str1, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11, str12, str13, str14, sep="<br/>")
     })
 
-    output$datatable <- DT::renderDataTable(server = FALSE, {
+    output$datatable <- DT::renderDataTable(server=FALSE, {
       DT::datatable(
         values,
-        extensions = c('Buttons', 'Scroller'),
+        extensions=c('Buttons', 'Scroller'),
         filter = 'top',
         rownames = FALSE,
         options = list(
@@ -283,7 +281,7 @@ server <- function(input, output, session) {
             )
           )
         )
-      ) %>% formatDate("Timestamp", "toLocaleString")
+      ) %>% formatDate("Timestamp", method = "toLocaleString", params = list("se", list(timeZone = "EST")))
     })
 
     output$dataplot <- renderPlot({
