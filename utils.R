@@ -27,7 +27,7 @@ check_date <- function(start_date, end_date){
 #' @keywords internal
 has_internet <- function(){
   z <- try(suppressWarnings(
-    readLines('https://www.google.com', n = 1)
+    readLines('https://www.google.ca', n = 1)
     ), silent = TRUE)
   !inherits(z, "try-error")
 }

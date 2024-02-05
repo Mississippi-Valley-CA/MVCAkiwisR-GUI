@@ -1,6 +1,6 @@
 # Prompt user for all needed inputs and then get values for the time series id.
 # This Shiny App asks the user for details to narrow down on the timeseries and then returns time series values for given time series id and date range.
-# Returns A visualization of the data and a data frame with the columns returned by the script ki_timeseries_values
+# Returns A visualization of the data and a data frame with the columns returned by the script quinte_timeseries_values
 # This package made possible thanks to Ryan Whaley's 'kiwisR' (<https://github.com/rywhale/kiwisR>).
 # Author: Daniel Post, MVCA, dpost@mvc.on.ca
 # Created: December 2023
@@ -13,24 +13,25 @@ library("httr")
 library("jsonlite")
 library("lubridate")
 library("purrr")
-library("tidyr")
+library("tidyverse")
 library("tibble")
 library("ggplot2")
 source("utils.R")
-source("ki_timeseries_values.R")
+source("quinte_timeseries_values.R")
 
 # Increase the timeout due to the large amount of data requested from Quinte Conservation Authority's server
 options(timeout=300)
 
-# Download the complete list of MVCA timeseries
-#ts_list <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage&csvdiv=;", sep=";")
+# In Production, suppress warnings globally (set to 0 for debugging)
+#options(warn=0)
+options(warn=-1)
 
 load_data <- function() {
   # Load the complete list of MVCA timeseries
-  csv_data <- fread("tslist.csv", sep=";")
+  csv_data <- fread("tslist.csv", sep="^")
 
   # Remove any empty timeseries
-  ts_list <<- subset(csv_data, !is.na(csv_data$from))
+  ts_list <- subset(csv_data, !is.na(csv_data$from))
 
   # Build the parameters list and make it available outside the function
   parameters <<- sort(unique(ts_list$parametertype_name))
@@ -49,7 +50,7 @@ ui <- fluidPage(
     # Application title
     titlePanel("MVCA WISKI-R"),
     # Button to Update the tslist from Quinte servers
-    actionButton("update_tslist", "Update Timeseries List (takes 3-5 min)"),
+    actionButton("update_tslist", "Update Timeseries List (takes 5-7 min)"),
     p(HTML("<br>")),
     # Sidebar with a slider input for number of bins
     sidebarLayout(
@@ -85,6 +86,7 @@ ui <- fluidPage(
           inputId = "startDate",
           label = "4. Pick a start date:",
           # Initialize as NULL and update in the server function.
+          value = NA,
           min = NULL,
           max = NULL
         ),
@@ -94,6 +96,7 @@ ui <- fluidPage(
           inputId = "endDate",
           label = "5. Pick an end date:",
           # Initialize as NULL and update in the server function.
+          value = NA,
           min = NULL,
           max = NULL
         ),
@@ -119,7 +122,7 @@ ui <- fluidPage(
             z-index: 999;
           }
         "),
-        div(htmlOutput("codeblock")),
+        div(htmlOutput("codeblock"), style = "font-family:courier,'courier new',serif;"),
         br(),
         div(plotOutput("dataplot")),
         br(),
@@ -139,7 +142,7 @@ ui <- fluidPage(
 # based upon user inputs. In this case, changing the presented timeseries
 # choices based on previous choices.
 server <- function(input, output, session) {
-  ts_list <- load_data()
+  ts_list_server <- load_data()
 
   output$mvca_logo <- renderImage({
     filename <- normalizePath(file.path('./images','mvca-new-logo.jpg'))
@@ -168,14 +171,14 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$update_tslist, {
-    updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage&csvdiv=;", sep=";")
-    fwrite(updated_data, file = "tslist.csv", sep=";")
+    updated_data <- fread("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage&csvdiv=%5E", sep="^")
+    fwrite(updated_data, file = "tslist.csv", sep="^")
     load_data()
     session$reload()
     return()
   })
 
-  tsDetails <- reactiveValues(startDate=NULL, endDate=NULL, tsId=NULL)
+  tsDetails <- reactiveValues(startDate=NULL, endDate=NULL, tsId=NULL, parameterType="", stationName="")
 
   # Observe functions will be triggered each time an argument undergoes a change in value
   observeEvent(input$parameters, {
@@ -184,6 +187,10 @@ server <- function(input, output, session) {
     dataAfterParameterUnited <<- dataAfterParameter %>% unite("station_name_and_station_no", station_name:station_no, remove=TRUE, sep=" / ")
     stations <- sort(unique(dataAfterParameterUnited$station_name_and_station_no))
     updateSelectizeInput(session, input = "stations", choices = c("Choose", stations))
+    # Update timeseries, startDate, endDate to NULL
+    updateSelectizeInput(session, input = "timeseries", choices = NULL)
+    updateDateInput(session, input = "startDate", value = NA)
+    updateDateInput(session, input = "endDate", value = NA)
   })
 
   observeEvent(input$stations, {
@@ -191,12 +198,31 @@ server <- function(input, output, session) {
     dataAfterStation <<- dataAfterParameterUnited[dataAfterParameterUnited$station_name_and_station_no == input$stations, ]
     timeseries <- sort(unique(dataAfterStation$ts_name))
     updateSelectizeInput(session, input = "timeseries", choices = c("Choose", timeseries))
+    # Update startDate, endDate to NULL
+    updateDateInput(session, input = "startDate", value = NA)
+    updateDateInput(session, input = "endDate", value = NA)
   })
 
   observeEvent(input$timeseries, {
     # Get the timeseries details to update the id, start date, and end date
     ts <- dataAfterStation[dataAfterStation$ts_name == input$timeseries, ]
     tsDetails$tsID <<- ts$ts_id
+
+    paramTypeCleanup <- tolower(ts$parametertype_name)
+    paramTypeCleanup <- gsub("-", "_", paramTypeCleanup)
+    paramTypeCleanup <- gsub(",", "_", paramTypeCleanup)
+    paramTypeCleanup <- gsub(":", "_", paramTypeCleanup)
+    paramTypeCleanup <- gsub(";", "_", paramTypeCleanup)
+    paramTypeCleanup <- gsub(" ", "_", paramTypeCleanup)
+    paramTypeCleanup <- gsub("__", "_", paramTypeCleanup)
+    tsDetails$parameterType <<- paramTypeCleanup
+
+    tsStnNameCleanup <- tolower(ts$station_name_and_station_no)
+    tsStnNameCleanup <- gsub(" - ", "_", tsStnNameCleanup)
+    tsStnNameCleanup <- gsub(" / ", "_", tsStnNameCleanup)
+    tsStnNameCleanup <- gsub(" ", "_", tsStnNameCleanup)
+    tsDetails$stationName <<- tsStnNameCleanup
+
     earliestStartDate <<- format(ts$from, format="%Y-%m-%d", tzone = "EST")
     latestEndDate <<- format(ts$to, format="%Y-%m-%d", tzone = "EST")
     updateDateInput(session, "startDate", min = earliestStartDate, max = latestEndDate, value = earliestStartDate)
@@ -213,36 +239,29 @@ server <- function(input, output, session) {
 
   observeEvent(input$loadTimeseriesData, {
     # Get the timeseries values #
-    values <- ki_timeseries_values(
+    values <- quinte_timeseries_values(
       ts_id = tsDetails$tsID,
       start_date = tsDetails$startDate,
       end_date = tsDetails$endDate
     )
 
-    parameterShef <- tolower(dataAfterStation[[6]][1])
-    parameterShef <- sub('.*- ', '', parameterShef)
-    parameterShef <- gsub(",", "", parameterShef)
-    parameterShef <- gsub(" ", "_", parameterShef)
-    stationName <- tolower(input$stations)
-    stationName <- sub('.*- ', '', stationName)
-    stationName <- gsub(",", "", stationName)
-    stationName <- gsub(" ", "_", stationName)
-    tsName <- paste(stationName, parameterShef, sep = "_")
+    tsName <- paste(tsDetails$stationName, tsDetails$parameterType, sep="_")
     str0 <- paste0('<b>', 'R script code:', '</b>')
     str1 <- ''
     str2 <- '# Install pacman package manager from CRAN'
     str3 <- "if (!require('pacman')) install.packages('pacman')"
-    str4 <- '# Use pacman to load kiwisR and add-on packages'
-    str5 <- 'pacman::p_load(pacman, kiwisR, utils)'
-    str6 <- ''
-    str7 <- paste0('# Access WISKI data for ', tsName)
-    str8 <- paste0(tsName, ' <- ki_timeseries_values(')
-    str9 <- paste0('&nbsp;&nbsp;', 'hub = "quinte",')
-    str10 <- paste0('&nbsp;&nbsp;', 'ts_id = "', tsDetails$tsID, '",')
-    str11 <- paste0('&nbsp;&nbsp;', 'start_date = "', tsDetails$startDate, '",')
-    str12 <- paste0('&nbsp;&nbsp;', 'end_date = "', tsDetails$endDate, '"')
-    str13 <- ')'
-    str14 <- ''
+    str4 <- ''
+    str5 <- '# Use pacman to load kiwisR and add-on packages'
+    str6 <- 'pacman::p_load(pacman, kiwisR, utils)'
+    str7 <- ''
+    str8 <- paste0('# Access WISKI data for ', tsName)
+    str9 <- paste0(tsName, ' <- ki_timeseries_values(')
+    str10 <- paste0('&nbsp;&nbsp;', 'hub = "quinte",')
+    str11 <- paste0('&nbsp;&nbsp;', 'ts_id = "', tsDetails$tsID, '",')
+    str12 <- paste0('&nbsp;&nbsp;', 'start_date = "', tsDetails$startDate, '",')
+    str13 <- paste0('&nbsp;&nbsp;', 'end_date = "', tsDetails$endDate, '"')
+    str14 <- ')'
+    str15 <- ''
 
     # Output the R-Script code to the code block
     output$codeblock <- renderText("")

@@ -4,21 +4,20 @@
 #' @description Returns time series values for given time series id and date range.
 #' @author Ryan Whaley, \email{rdgwhaley@@gmail.com}
 #' @param ts_id Either: a single time series id or a vector of time series ids.
-#'  Time series ids can be found using the `ki_timeseries_list` function.
 #' @param start_date A date string formatted "YYYY-MM-DD". Defaults to yesterday.
 #' @param end_date A date string formatted "YYYY-MM-DD". Defaults to today.
 #' @return A tibble with following columns by default:
 #'  Timestamp, Value, Units, station_name, station_no, stationparameter_name, ts_name, ts_id
 #' @examples
 #' \dontrun{
-#' ki_timeseries_values(
+#' quinte_timeseries_values(
 #'   ts_id = "1395042",
 #'   start_date = "2015-12-01",
 #'   end_date = "2018-01-01"
 #' )
 #' }
 #'
-ki_timeseries_values <- function(ts_id, start_date, end_date) {
+quinte_timeseries_values <- function(ts_id, start_date, end_date) {
   # Default to past 24 hours
   if (missing(start_date) || missing(end_date)) {
     message("No start or end date provided, trying to return data for past 24 hours")
@@ -29,7 +28,7 @@ ki_timeseries_values <- function(ts_id, start_date, end_date) {
   }
 
   if (missing(ts_id)) {
-    stop("Please enter a valid ts_id.")
+    stop("Please enter a valid ts_id")
   } else {
     # Account for multiple ts_ids
     ts_id_string <- paste(ts_id, collapse = ",")
