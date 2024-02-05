@@ -22,16 +22,12 @@ source("quinte_timeseries_values.R")
 # Increase the timeout due to the large amount of data requested from Quinte Conservation Authority's server
 options(timeout=300)
 
-# In Production, suppress warnings globally (set to 0 for debugging)
-#options(warn=0)
-options(warn=-1)
-
 load_data <- function() {
   # Load the complete list of MVCA timeseries
   csv_data <- fread("tslist.csv", sep="^")
 
   # Remove any empty timeseries
-  ts_list <- subset(csv_data, !is.na(csv_data$from))
+  ts_list <<- subset(csv_data, !is.na(csv_data$from))
 
   # Build the parameters list and make it available outside the function
   parameters <<- sort(unique(ts_list$parametertype_name))
@@ -142,16 +138,16 @@ ui <- fluidPage(
 # based upon user inputs. In this case, changing the presented timeseries
 # choices based on previous choices.
 server <- function(input, output, session) {
-  ts_list_server <- load_data()
+  ts_list <- load_data()
 
   output$mvca_logo <- renderImage({
     filename <- normalizePath(file.path('./images','mvca-new-logo.jpg'))
 
     list(src = filename,
-         contentType = 'image/jpg',
-         width = 202,
-         height = 40,
-         alt = "The MVCA's logo")
+        contentType = 'image/jpg',
+        width = 202,
+        height = 40,
+        alt = "The MVCA's logo")
   }, deleteFile = FALSE)
 
   # Build the instructions text in the main panel
@@ -184,8 +180,8 @@ server <- function(input, output, session) {
   observeEvent(input$parameters, {
     # Update stations input based on parameters
     dataAfterParameter <- ts_list[ts_list$parametertype_name == input$parameters, ]
-    dataAfterParameterUnited <<- dataAfterParameter %>% unite("station_name_and_station_no", station_name:station_no, remove=TRUE, sep=" / ")
-    stations <- sort(unique(dataAfterParameterUnited$station_name_and_station_no))
+    dataAfterParameterJoined <<- dataAfterParameter %>% unite("station_name_and_station_no", station_name:station_no, remove=TRUE, sep=" / ")
+    stations <- sort(unique(dataAfterParameterJoined$station_name_and_station_no))
     updateSelectizeInput(session, input = "stations", choices = c("Choose", stations))
     # Update timeseries, startDate, endDate to NULL
     updateSelectizeInput(session, input = "timeseries", choices = NULL)
@@ -195,7 +191,7 @@ server <- function(input, output, session) {
 
   observeEvent(input$stations, {
     # Update timeseries input based on stations
-    dataAfterStation <<- dataAfterParameterUnited[dataAfterParameterUnited$station_name_and_station_no == input$stations, ]
+    dataAfterStation <<- dataAfterParameterJoined[dataAfterParameterJoined$station_name_and_station_no == input$stations, ]
     timeseries <- sort(unique(dataAfterStation$ts_name))
     updateSelectizeInput(session, input = "timeseries", choices = c("Choose", timeseries))
     # Update startDate, endDate to NULL
