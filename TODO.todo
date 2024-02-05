@@ -10,3 +10,7 @@
     Warning: Removed 4 rows containing missing values (`geom_line()`).
 
 - Dataframe is not always sorted by timestamp, i.e.: Lead, WQM - Fall River, 01.Original, 1999-2018
+
+- data table sepecify format: YYYY-mm-dd HH:mm:ss
+
+- Change font of codeblock

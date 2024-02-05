@@ -239,9 +239,16 @@ server <- function(input, output, session) {
     str13 <- ')'
     str14 <- ''
 
+    # Output the R-Script code to the code block
     output$codeblock <- renderText({
       paste(str0, str1, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11, str12, str13, str14, sep="<br/>")
     })
+
+    # Output the quick and simple visualization to the data plot
+    output$dataplot <- renderPlot({
+      ggplot(values) + geom_line(aes(Timestamp, Value))
+    })
+
 
     output$datatable <- DT::renderDataTable(server=FALSE, {
       DT::datatable(
@@ -281,11 +288,7 @@ server <- function(input, output, session) {
             )
           )
         )
-      ) %>% formatDate("Timestamp", method = "toLocaleString", params = list("se", list(timeZone = "EST")))
-    })
-
-    output$dataplot <- renderPlot({
-      ggplot(values) + geom_line(aes(Timestamp, Value))
+      ) %>% formatDate("Timestamp", method = "toLocaleString", params = list("sv-SE", list(hour12 = F, timeZone = "EST")))
     })
   })
 }
