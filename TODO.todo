@@ -2,7 +2,7 @@
     - Clicking "Load Timeseries Data" without choosing all parameters crashes the app with the error:
         Warning: Error in ki_timeseries_values: Request must contain either ts_id, timeseriesgroup_id or ts_path.
 
-- Name data download file based on station/timeseries data.
+- Name data download csv file based on station/timeseries data.
 
 - Some water quality parameter names include parentheses, dashes, etc. All special characters should be cleaned out. Regex?
 

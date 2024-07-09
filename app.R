@@ -24,7 +24,7 @@ options(timeout=300)
 
 update_timeseries <- function() {
   # Load the complete list of MVCA timeseries
-  download.file("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=%5E&downloadaszip=true&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", destfile='tslist.zip', mode='wb', overwrite=TRUE)
+  download.file("https://waterdata.quinteconservation.ca/KiWIS/KiWIS?service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=csv&csvdiv=%5E&downloadaszip=true&timezone=EST&dateformat=yyyy-MM-dd%20HH:mm:ss&site_no=2&station_name=*&returnfields=station_name,station_no,ts_id,ts_name,parametertype_name,stationparameter_name,coverage", destfile='tslist.zip', quiet=TRUE, mode='wb', overwrite=TRUE)
   unzip('tslist.zip', overwrite=TRUE)
   load
 }
@@ -160,11 +160,11 @@ server <- function(input, output, session) {
 
   # Build the instructions text in the main panel
   instr0 <- paste0('<b>', 'Instructions', '</b>')
-  instr1 <- 'Access the MVCA\'s water levels and flows, water quality, snow, ice, and climate data.'
+  instr1 <- 'Access the MVCA\'s data for water levels and flows, water quality, snow, ice, and climate.'
   instr2 <- ''
   instr3 <- 'Begin by selecting a parameter and then work down the list to choose a station, timeseries, and start/end dates.'
   instr4 <- ''
-  instr5 <- 'Click "Load Timeseries" to see and download the data. Modify your selections and re-load as needed.'
+  instr5 <- 'Click "Load Timeseries Data" to see and download the data. Modify your selections and reload as needed.'
   instr6 <- ''
   instr7 <- paste0('<b>', 'Note', '</b>')
   instr8 <- '"Update Timeseries List" takes several minutes but will reload the app with the most recent datasets.'
@@ -175,7 +175,9 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$update_tslist, {
+    showModal(modalDialog("Downloading updated list...Please wait...", footer=NULL))
     update_timeseries()
+    removeModal()
     session$reload()
     return()
   })
